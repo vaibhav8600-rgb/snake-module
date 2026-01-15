@@ -17,7 +17,7 @@ LOG_MODULE_DECLARE(zmk, CONFIG_ZMK_LOG_LEVEL);
 #include <zephyr/drivers/display.h>
 #include <zmk/display.h>
 #include <zmk/display/widgets/layer_status.h>
-#include <zmk_dongle_events/dongle_action_event.h>
+#include <zmk/events/dongle_action_event.h>
 #include <zmk/event_manager.h>
 #include <zmk/endpoints.h>
 #include <zmk/keymap.h>

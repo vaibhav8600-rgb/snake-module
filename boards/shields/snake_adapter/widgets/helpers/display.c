@@ -2279,6 +2279,7 @@ void print_line_vertical_270(uint8_t *buf_frame, uint16_t start_x, uint16_t end_
 
     uint16_t vertical_line_len = end_y - start_y + scale;
 
+    /* Horizontal line after rotation */
     line_desc.width    = vertical_line_len;
     line_desc.height   = scale;
     line_desc.pitch    = vertical_line_len;
@@ -2286,14 +2287,12 @@ void print_line_vertical_270(uint8_t *buf_frame, uint16_t start_x, uint16_t end_
 
     fill_buffer_color(buf_frame, line_desc.buf_size * 2u, color);
 
-    int32_t y0 = (int32_t)SCREEN_WIDTH - (int32_t)start_x - (int32_t)vertical_line_len;
-    int32_t y1 = (int32_t)SCREEN_WIDTH - (int32_t)end_x   - (int32_t)vertical_line_len;
+    uint16_t x_rot = start_y;
+    uint16_t y_rot_start = SCREEN_WIDTH - start_x - scale;
+    uint16_t y_rot_end   = SCREEN_WIDTH - end_x   - scale;
 
-    if (y0 < 0) y0 = 0;
-    if (y1 < 0) y1 = 0;
-
-    display_write(display_dev, start_y, (uint16_t)y0, &line_desc, buf_frame);
-    display_write(display_dev, start_y, (uint16_t)y1, &line_desc, buf_frame);
+    display_write(display_dev, x_rot, y_rot_start, &line_desc, buf_frame);
+    display_write(display_dev, x_rot, y_rot_end,   &line_desc, buf_frame);
 }
 
 

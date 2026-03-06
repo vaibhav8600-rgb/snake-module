@@ -82,9 +82,10 @@ void set_next_theme_number() {
 }
 
 void set_previous_theme_number() {
-    current_theme--;
-    if (current_theme < 0) {
+    if (current_theme == 0) {
         current_theme = get_themes_colors_len() - 1;
+    } else {
+        current_theme--;
     }
 }
 
@@ -104,6 +105,9 @@ void theme_init() {
     scaled_bitmap_theme_font = k_malloc(theme_font_size * 2 * sizeof(uint16_t));
 
     current_theme = snake_settings_get_current_theme();
+    if (current_theme >= get_themes_colors_len()) {
+        current_theme = 0;
+    }
     apply_current_theme(current_theme);
     
     theme_slot = get_slot_by_name(SLOT_NAME_THEME);

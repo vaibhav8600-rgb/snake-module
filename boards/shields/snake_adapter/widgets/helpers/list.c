@@ -3,7 +3,10 @@
 #include "list.h"
 
 Snake_List* create_list() {
-    Snake_List *list = (Snake_List *)malloc(sizeof(Snake_List));
+    Snake_List *list = (Snake_List *)k_malloc(sizeof(Snake_List));
+    if (!list) {
+        return NULL;
+    }
     list->length = 0;
     list->head = NULL;
     list->tail = NULL;
@@ -11,7 +14,10 @@ Snake_List* create_list() {
 }
 
 Snake_Node* create_node(uint8_t x, uint8_t y) {
-    Snake_Node *node = (Snake_Node *)malloc(sizeof(Snake_Node));
+    Snake_Node *node = (Snake_Node *)k_malloc(sizeof(Snake_Node));
+    if (!node) {
+        return NULL;
+    }
     node->x = x;
     node->y = y;
     return node;
@@ -38,6 +44,9 @@ uint8_t list_length(Snake_List *list) {
 
 void prepend(Snake_List *list, uint8_t x, uint8_t y) {
     Snake_Node *node = create_node(x, y);
+    if (!node) {
+        return;
+    }
     if (empty_list(list)) {
         list->head = node;
         list->tail = node;
@@ -62,14 +71,14 @@ void remove_tail(Snake_List *list) {
         return;
     }
     if (list->head == list->tail) {
-        free(list->head);
+        k_free(list->head);
         list->head = NULL;
         list->tail = NULL;
         return;
     }
     list->head->prev = list->tail->prev;
     list->tail->prev->next = list->head;
-    free(list->tail);
+    k_free(list->tail);
     list->tail = list->head->prev;
 }
 

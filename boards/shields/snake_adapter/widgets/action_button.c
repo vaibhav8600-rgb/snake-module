@@ -207,7 +207,7 @@ void dongle_action_update_cb(struct zmk_dongle_actioned state) {
         return;
     }
     if (!state.pressed) {
-        uint8_t index;
+        uint8_t index = menu_layer;
         int64_t elapsed_time = state.timestamp - pressed_timestamp;
         if (elapsed_time > menu_threshold) {
             index = menu_layer;

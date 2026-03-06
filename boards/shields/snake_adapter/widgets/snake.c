@@ -9,7 +9,7 @@
 
 #include <stdlib.h>
 #include <zephyr/logging/log.h>
-LOG_MODULE_REGISTER(sample, LOG_LEVEL_INF);
+LOG_MODULE_REGISTER(snake_game, LOG_LEVEL_INF);
 
 #include <zephyr/kernel.h>
 #include <zephyr/bluetooth/services/bas.h>
@@ -110,25 +110,22 @@ static uint8_t snake_board_width = 48;
 static uint8_t snake_board_height = 48;
 static uint8_t snake_pixel_size = 5;
 
+#define SNAKE_X_OFFSET     0
+#define SNAKE_Y_OFFSET     0
+
+#define MAX_SNAKE_BOARD_WIDTH 48
+#define MAX_SNAKE_BOARD_HEIGHT 48
+
 void set_snake_board_width(uint8_t width) {
-    snake_board_width = width;
+    snake_board_width = (width > MAX_SNAKE_BOARD_WIDTH) ? MAX_SNAKE_BOARD_WIDTH : width;
 }
 
 void set_snake_board_height(uint8_t height) {
-    snake_board_height = height;
+    snake_board_height = (height > MAX_SNAKE_BOARD_HEIGHT) ? MAX_SNAKE_BOARD_HEIGHT : height;
 }
 void set_snake_pixel_size(uint8_t pixel_size) {
     snake_pixel_size = pixel_size;
 }
-
-#define SNAKE_X_OFFSET     0
-#define SNAKE_Y_OFFSET     0
-// #define SNAKE_BOARD_WIDTH  48
-// #define SNAKE_BOARD_HEIGHT 48
-// #define SNAKE_PIXEL_SIZE   5
-
-#define MAX_SNAKE_BOARD_WIDTH 48
-#define MAX_SNAKE_BOARD_HEIGHT 48
 
 // #define SNAKE_WALK_DURATION 40
 //#define FATNESS             1
@@ -505,6 +502,9 @@ static void destroy_snake() {
 }
 
 static void paint_snake() {
+    if (!snake_list || !snake_list->head) {
+        return;
+    }
     Snake_Node * current_node = snake_list->head;
     while(current_node != snake_list->tail) {
         snake_render_pixel_current_color(current_node->x, current_node->y);

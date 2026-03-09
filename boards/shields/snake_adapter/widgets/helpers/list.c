@@ -24,13 +24,16 @@ Snake_Node* create_node(uint8_t x, uint8_t y) {
 }
 
 bool empty_list(Snake_List *list) {
+    if (!list) {
+        return true;
+    }
     return list->head == NULL && list->tail == NULL;
 }
 
 uint8_t list_length(Snake_List *list) {
     Snake_Node *node;
     uint8_t count;
-    if (list->head == NULL && list->tail == NULL) {
+    if (!list || (list->head == NULL && list->tail == NULL)) {
         return 0;
     }
     node = list->head;
@@ -43,6 +46,9 @@ uint8_t list_length(Snake_List *list) {
 }
 
 void prepend(Snake_List *list, uint8_t x, uint8_t y) {
+    if (!list) {
+        return;
+    }
     Snake_Node *node = create_node(x, y);
     if (!node) {
         return;
@@ -53,7 +59,8 @@ void prepend(Snake_List *list, uint8_t x, uint8_t y) {
 
         node->next = node;
         node->prev = node;
-        
+
+        list->length = 1;
         return;
     }
 
@@ -64,25 +71,31 @@ void prepend(Snake_List *list, uint8_t x, uint8_t y) {
     list->tail->next = node;
 
     list->head = node;
+    list->length++;
 }
 
 void remove_tail(Snake_List *list) {
-    if (empty_list(list)) {
+    if (!list || empty_list(list)) {
         return;
     }
     if (list->head == list->tail) {
         k_free(list->head);
         list->head = NULL;
         list->tail = NULL;
+        list->length = 0;
         return;
     }
     list->head->prev = list->tail->prev;
     list->tail->prev->next = list->head;
     k_free(list->tail);
     list->tail = list->head->prev;
+    list->length--;
 }
 
 void clean_list(Snake_List *list) {
+    if (!list) {
+        return;
+    }
     while(list_length(list) > 0) {
         remove_tail(list);
     }

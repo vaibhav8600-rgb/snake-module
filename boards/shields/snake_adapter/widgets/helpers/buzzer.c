@@ -429,7 +429,7 @@ void run_notification_song(void) {
     if (snake_settings_get_mute()) {
         return;
     }
-    play_sound_with_vibrato(error_sound[0], 6.0f, 5.0f);
+    play_sound_with_vibrato(notification_sound[0], 6.0f, 5.0f);
     
     // Stop the sound after done
 	stop_pwm();

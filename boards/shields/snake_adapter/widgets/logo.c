@@ -236,6 +236,11 @@ struct section get_section(uint16_t cc) {
         s.num = 3;
         return s;
     }
+    /* Logically unreachable, but satisfies compiler return analysis */
+    s.x = 0;
+    s.y = 0;
+    s.num = 0;
+    return s;
 }
 
 void print_initial_animation() {

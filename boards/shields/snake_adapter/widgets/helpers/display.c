@@ -13,10 +13,10 @@ static uint8_t *buf_screen_area;
 
 static size_t buf_screen_size;
 
-static uint16_t splash_logo_multicolor_0 = 0x3dff98u;
-static uint16_t splash_logo_multicolor_1 = 0xff4adcu;
-static uint16_t splash_logo_multicolor_2 = 0x222323u;
-static uint16_t splash_logo_multicolor_3 = 0x121313u;// http://lospec.com/palette-list/b4sement
+static uint16_t splash_logo_multicolor_0 = 0x0000u;
+static uint16_t splash_logo_multicolor_1 = 0x0000u;
+static uint16_t splash_logo_multicolor_2 = 0x0000u;
+static uint16_t splash_logo_multicolor_3 = 0x0000u; /* Overwritten by theme_init() before first use */
 static uint16_t splash_logo_color;
 static uint16_t splash_created_by_color;
 static uint16_t splash_bg_color;

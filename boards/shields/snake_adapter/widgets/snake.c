@@ -253,7 +253,7 @@ static Direction previous_direction(Direction d) {
 }
 
 static bool is_out_of_board(uint8_t x, uint8_t y) {
-    return x < 0 || x >= snake_board_width || y < 0 || y >= snake_board_height;
+    return x >= snake_board_width || y >= snake_board_height;
 }
 
 static bool is_snake_body(uint8_t x, uint8_t y) {

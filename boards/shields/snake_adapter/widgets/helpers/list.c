@@ -31,18 +31,10 @@ bool empty_list(Snake_List *list) {
 }
 
 uint8_t list_length(Snake_List *list) {
-    Snake_Node *node;
-    uint8_t count;
-    if (!list || (list->head == NULL && list->tail == NULL)) {
+    if (!list) {
         return 0;
     }
-    node = list->head;
-    count = 1;
-    while(node != list->tail) {
-        node = node->next;
-        count++;
-    }
-    return count;
+    return list->length;
 }
 
 void prepend(Snake_List *list, uint8_t x, uint8_t y) {
@@ -96,7 +88,7 @@ void clean_list(Snake_List *list) {
     if (!list) {
         return;
     }
-    while(list_length(list) > 0) {
+    while(!empty_list(list)) {
         remove_tail(list);
     }
 }

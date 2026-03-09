@@ -236,6 +236,11 @@ struct section get_section(uint16_t cc) {
         s.num = 3;
         return s;
     }
+    /* Logically unreachable, but satisfies compiler return analysis */
+    s.x = 0;
+    s.y = 0;
+    s.num = 0;
+    return s;
 }
 
 void print_initial_animation() {
@@ -251,7 +256,7 @@ void print_initial_animation() {
 
     print_string(snake_logo_buf, logo_chars, snake_logo_x, snake_logo_y, snake_logo_font_scale, get_logo_font_color(), get_logo_bg_color(), FONT_SIZE_4x5, char_gap_pixels, logo_chars_len);
 
-    for (uint16_t i; i < animation_sections_total; i++) {
+    for (uint16_t i = 0; i < animation_sections_total; i++) {
         Section s = get_section(i);
         if (i == 5 || i == 6 || i == 7) {
             print_animation_space(s);

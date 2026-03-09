@@ -429,7 +429,7 @@ void run_notification_song(void) {
     if (snake_settings_get_mute()) {
         return;
     }
-    play_sound_with_vibrato(error_sound[0], 6.0f, 5.0f);
+    play_sound_with_vibrato(notification_sound[0], 6.0f, 5.0f);
     
     // Stop the sound after done
 	stop_pwm();
@@ -489,79 +489,6 @@ void run_powerd_down_song(void) {
     // Stop the sound after done
 	stop_pwm();
 }
-
-// #####################################################################################
-
-
-#define SUCCESS_NOTES 2
-static Sound success_sound[SUCCESS_NOTES] = {
-    {.note = E5, .duration = SIXTEENTH},
-    {.note = C5, .duration = EIGTH}
-};
-//Optional: Use play_dual_note_simulated(C5, E5, EIGTH) for a harmonic "ding."
-
-#define CANCEL_NOTES 2
-static Sound cancel_sound[CANCEL_NOTES] = {
-    {.note = Bb4, .duration = SIXTEENTH},
-    {.note = G4, .duration = EIGTH}
-};
-
-#define CHARGING_NOTES 4
-static Sound charging_sound[CHARGING_NOTES] = {
-    {.note = A4, .duration = SIXTEENTH},
-    {.note = C5, .duration = SIXTEENTH},
-    {.note = E5, .duration = EIGTH},
-    {.note = G5, .duration = QUARTER}
-};
-// Can also be played with slight play_slide_with_vibrato transitions between steps.
-
-#define BATTERY_FULL_NOTES 5
-static Sound battery_full_sound[BATTERY_FULL_NOTES] = {
-    {.note = G4, .duration = SIXTEENTH},
-    {.note = C5, .duration = SIXTEENTH},
-    {.note = E5, .duration = SIXTEENTH},
-    {.note = G5, .duration = SIXTEENTH},
-    {.note = C6, .duration = QUARTER}
-};
-
-#define WARNING_NOTES 2
-static Sound warning_sound[WARNING_NOTES] = {
-    {.note = F4, .duration = EIGTH},
-    {.note = A4, .duration = QUARTER}
-};
-
-#define CRITICAL_ERROR_NOTES 4
-static Sound critical_error_sound[CRITICAL_ERROR_NOTES] = {
-    {.note = C5, .duration = SIXTEENTH},
-    {.note = Gb4, .duration = SIXTEENTH},
-    {.note = E4, .duration = EIGTH},
-    {.note = C3, .duration = HALF}
-};
-// Could also be: play_slide_with_vibrato(C5, C3, WHOLE, 12.0f, 4.0f);
-
-#define WIFI_SEARCH_NOTES 3
-static Sound wifi_search_sound[WIFI_SEARCH_NOTES] = {
-    {.note = G4, .duration = SIXTEENTH},
-    {.note = A4, .duration = SIXTEENTH},
-    {.note = Bb4, .duration = SIXTEENTH}
-};
-//Play this in a loop while searching, optionally increasing pitch subtly on each loop.
-
-#define WIFI_CONNECTED_NOTES 3
-static Sound wifi_connected_sound[WIFI_CONNECTED_NOTES] = {
-    {.note = D5, .duration = SIXTEENTH},
-    {.note = F5, .duration = SIXTEENTH},
-    {.note = A5, .duration = EIGTH}
-};
-
-#define LOW_BATTERY_NOTES 3
-static Sound low_battery_sound[LOW_BATTERY_NOTES] = {
-    {.note = C4, .duration = SIXTEENTH},
-    {.note = REST, .duration = SIXTEENTH},
-    {.note = C4, .duration = QUARTER}
-};
-// Could add a vibrato here to make it "shaky" like a dying battery :play_sound_with_vibrato((Sound){.note = C4, .duration = QUARTER}, 12.0f, 4.0f);
-
 
 #else
 

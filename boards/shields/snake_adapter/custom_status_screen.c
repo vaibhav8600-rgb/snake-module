@@ -47,6 +47,7 @@ void timer_splash(lv_timer_t * timer) {
         start_action_button(menu_on);
 
         lv_timer_pause(timer);
+        clean_up_splash();
         splash_finished = true;
         return;
     }

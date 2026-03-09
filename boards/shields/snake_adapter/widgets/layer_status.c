@@ -150,7 +150,7 @@ void zmk_widget_layer_init() {
     scaled_bitmap_layer_font = k_malloc(layer_font_size * 2 * sizeof(uint16_t));
     last_printed_layer = (struct layer_status_state) {
         .index = 0,
-        .label = '\0'
+        .label = ""
     };
 
     layer_slot = get_slot_by_name(SLOT_NAME_LAYER);

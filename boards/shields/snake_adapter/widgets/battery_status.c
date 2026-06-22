@@ -197,7 +197,12 @@ void initialize_battery_status() {
 }
 
 void start_battery_status() {
-    print_empty_batteries();
+    /* Render the last known battery levels instead of blanking to "--%".
+     * Before any report has arrived the cached levels are 0, which
+     * print_percentage() already renders as "--%", so this is identical on
+     * first show but avoids wiping real values to dashes (for up to a full
+     * battery-report interval) every time the status screen is reopened. */
+    set_battery_symbol();
     battery_widget_running = true;
 }
 

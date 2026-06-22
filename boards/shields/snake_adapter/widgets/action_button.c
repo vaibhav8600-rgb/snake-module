@@ -207,6 +207,12 @@ void dongle_action_update_cb(struct zmk_dongle_actioned state) {
         return;
     }
     if (!state.pressed) {
+        if (pressed_timestamp == 0) {
+            /* Release with no matching press (dropped event, reconnect, etc.).
+             * Without this guard elapsed_time would equal the full uptime and
+             * spuriously trigger the longest-press action (mute). */
+            return;
+        }
         uint8_t index = menu_layer;
         int64_t elapsed_time = state.timestamp - pressed_timestamp;
         if (elapsed_time > menu_threshold) {

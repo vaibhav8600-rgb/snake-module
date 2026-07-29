@@ -51,7 +51,7 @@ static void jiggle_work_cb(struct k_work *work) {
     }
 
     zmk_hid_mouse_movement_set(dx, dy);
-    zmk_endpoints_send_mouse_report();
+    zmk_endpoint_send_mouse_report();
     zmk_hid_mouse_movement_set(0, 0); /* don't leak movement into later reports */
 
     steps_left--;

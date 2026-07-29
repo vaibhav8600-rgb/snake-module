@@ -114,18 +114,31 @@ void print_frames() {
     #endif
 }
 
-/* Anti-idle (mouse jiggler) indicator: small filled square just inside the
- * top-right corner of the top container on the status screen. Green
- * (bt-status-ok theme color) = jiggler ON; repainted in bg color when OFF.
+/* Anti-idle (mouse jiggler) indicator: small filled dot just inside the
+ * top-right corner of the top container on the status screen. Highlighter
+ * green = jiggler ON; repainted in bg color when OFF. Deliberately theme-
+ * independent so the indicator always pops — change the hex to retint it.
  * Redrawn by print_menu so it survives menu redraws and theme changes. Not
  * drawn on the snake screen (the game owns the full display). */
+#define ANTI_IDLE_ON_COLOR 0x39FF14u /* neon/highlighter green */
+#define ANTI_IDLE_CX 228             /* dot center, top-right of first container */
+#define ANTI_IDLE_CY 12
+#define ANTI_IDLE_R  6               /* 13px diameter */
+#define ANTI_IDLE_R2 40              /* radius^2, nudged up from 36 so the top and
+                                        bottom rows are not 1px spikes */
+
 static bool anti_idle_on = false;
 
 static void print_anti_idle_indicator() {
-    uint16_t color = anti_idle_on ? get_bt_status_ok_color() : get_menu_bg_color();
-    /* nested 1px outlines -> solid 13x13 square at x 222..234, y 6..18 */
-    for (uint16_t i = 0; i <= 6; i++) {
-        print_rectangle(buf_frame, 222 + i, 234 - i, 6 + i, 18 - i, color, 1);
+    uint16_t color = anti_idle_on ? rgb888_to_rgb565(ANTI_IDLE_ON_COLOR) : get_menu_bg_color();
+    fill_buffer_color(buf_frame, (2 * ANTI_IDLE_R + 1) * 2u, color);
+    /* filled disc: one horizontal span per row, widest row first at the centre */
+    for (int dy = -ANTI_IDLE_R; dy <= ANTI_IDLE_R; dy++) {
+        int dx = 0;
+        while (((dx + 1) * (dx + 1)) + (dy * dy) <= ANTI_IDLE_R2) {
+            dx++;
+        }
+        render_filled_rectangle(buf_frame, ANTI_IDLE_CX - dx, ANTI_IDLE_CY + dy, 2 * dx + 1, 1);
     }
 }
 

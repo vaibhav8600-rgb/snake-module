@@ -60,8 +60,9 @@ on the host.
 - **Humanized pattern**: bursts of 4–9 random ±1–2 px moves (15–50 ms apart),
   then a random 20–60 s pause — never a fixed pattern
 - **Confirmation**: the cursor twitches ~300 ms after toggling on
-- **Status indicator**: a green square (bt-status-ok theme color) in the
-  top-right of the dongle status screen while active
+- **Status indicator**: a highlighter-green dot in the top-right of the
+  dongle status screen while active (theme-independent so it always pops —
+  retint via `ANTI_IDLE_ON_COLOR` in `widgets/action_button.c`)
 - Keeps running until toggled off, independent of the active layer
 
 ### Usage

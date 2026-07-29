@@ -244,6 +244,7 @@ uint8_t get_themes_colors_len(void);
 void set_custom_theme_colors(uint32_t color1, uint32_t color2, uint32_t color3, uint32_t color4, uint32_t color5, uint32_t color6);
 void apply_current_theme(uint8_t current_theme);
 uint32_t darken_color(uint32_t rgb, float percentage);
+uint16_t rgb888_to_rgb565(uint32_t color);
 void set_complete_colors_theme();
 uint32_t hex_string_to_uint(const char *hex_str);
 

@@ -7,6 +7,7 @@
 #include <zmk/behavior.h>
 #include <zmk/hid.h>
 #include <zmk/endpoints.h>
+#include <zmk_dongle_events/anti_idle_state_event.h>
 
 LOG_MODULE_DECLARE(zmk, CONFIG_ZMK_LOG_LEVEL);
 
@@ -76,6 +77,7 @@ static void anti_idle_toggle(void) {
     } else {
         k_work_cancel_delayable(&jiggle_work);
     }
+    raise_zmk_anti_idle_state((struct zmk_anti_idle_state){.active = active});
     LOG_INF("anti-idle %s", active ? "enabled" : "disabled");
 }
 

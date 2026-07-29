@@ -13,9 +13,11 @@ LOG_MODULE_DECLARE(zmk, CONFIG_ZMK_LOG_LEVEL);
 #if DT_HAS_COMPAT_STATUS_OKAY(DT_DRV_COMPAT)
 
 /* Behaviors run on the central (dongle), which owns the HID endpoints.
- * Peripheral builds just need this to compile, so all HID work is
- * guarded by CONFIG_ZMK_POINTING. */
-#if IS_ENABLED(CONFIG_ZMK_POINTING)
+ * ZMK only compiles hid.c/endpoints.c when !ZMK_SPLIT || ZMK_SPLIT_ROLE_CENTRAL
+ * (same dependency as ZMK_USB), so peripheral builds must take the stub path
+ * even though they inherit CONFIG_ZMK_POINTING=y from sofle.conf. */
+#if IS_ENABLED(CONFIG_ZMK_POINTING) &&                                                             \
+    (!IS_ENABLED(CONFIG_ZMK_SPLIT) || IS_ENABLED(CONFIG_ZMK_SPLIT_ROLE_CENTRAL))
 
 static bool active;
 static uint8_t steps_left;
@@ -77,11 +79,11 @@ static void anti_idle_toggle(void) {
     LOG_INF("anti-idle %s", active ? "enabled" : "disabled");
 }
 
-#else /* !CONFIG_ZMK_POINTING */
+#else /* no pointing support, or split peripheral without HID endpoints */
 
 static void anti_idle_toggle(void) {}
 
-#endif /* CONFIG_ZMK_POINTING */
+#endif
 
 static int on_binding_pressed(struct zmk_behavior_binding *binding,
                               struct zmk_behavior_binding_event event) {

@@ -47,3 +47,34 @@ Display your own 240×240 image on the splash screen — no forking, no extra to
 - If the generated array has the `static` keyword, **remove it** — the module needs external linkage
 - The `.c` file is typically ~350 KB as source but compiles to ~112 KB in flash
 - Display rotation is handled automatically by the module
+
+---
+
+## Anti-Idle (Humanized Mouse Jiggler)
+
+The module ships an `&anti_idle` toggle behavior that keeps the host awake by
+sending tiny, humanized mouse movements from the dongle — no software needed
+on the host.
+
+- **Toggle on/off** with a single key press (same key toggles both ways)
+- **Humanized pattern**: bursts of 4–9 random ±1–2 px moves (15–50 ms apart),
+  then a random 20–60 s pause — never a fixed pattern
+- **Confirmation**: the cursor twitches ~300 ms after toggling on
+- **Status indicator**: a green square (bt-status-ok theme color) in the
+  top-right of the dongle status screen while active
+- Keeps running until toggled off, independent of the active layer
+
+### Usage
+
+1. Declare the behavior in your keymap:
+   ```dts
+   anti_idle: anti_idle {
+       compatible = "zmk,behavior-anti-idle";
+       #binding-cells = <0>;
+   };
+   ```
+2. Bind `&anti_idle` on any key.
+3. Make sure the central/dongle build has `CONFIG_ZMK_POINTING=y`.
+
+The jiggler runs only on the central (it owns the HID endpoints); peripheral
+builds compile the behavior as a no-op stub.

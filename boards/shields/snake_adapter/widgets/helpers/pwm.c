@@ -5,7 +5,10 @@
  */
 
 #include <zephyr/logging/log.h>
-LOG_MODULE_REGISTER(app_buzzer, LOG_LEVEL_DBG);
+/* buzzer.c already registers the "app_buzzer" log module; this file shares it.
+ * Two LOG_MODULE_REGISTER for the same name would create duplicate symbols and
+ * fail to link once logging is enabled, so declare (don't re-register) here. */
+LOG_MODULE_DECLARE(app_buzzer, LOG_LEVEL_DBG);
 
 #include <stdlib.h>
 #include <zephyr/device.h>

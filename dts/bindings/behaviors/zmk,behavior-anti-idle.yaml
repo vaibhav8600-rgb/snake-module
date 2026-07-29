@@ -1,0 +1,10 @@
+# Copyright (c) 2026 The ZMK Contributors
+# SPDX-License-Identifier: MIT
+
+description: Anti-Idle (humanized mouse jiggler) toggle behavior
+
+compatible: "zmk,behavior-anti-idle"
+
+include: zero_param.yaml
+
+properties: {}

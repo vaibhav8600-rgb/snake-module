@@ -19,6 +19,7 @@ LOG_MODULE_DECLARE(zmk, CONFIG_ZMK_LOG_LEVEL);
 #include <zmk/display/widgets/layer_status.h>
 #include <zmk_dongle_events/dongle_action_event.h>
 #include <zmk_dongle_events/snake_direction_event.h>
+#include <zmk_dongle_events/anti_idle_state_event.h>
 #include <zmk/event_manager.h>
 #include <zmk/endpoints.h>
 #include <zmk/keymap.h>
@@ -113,10 +114,26 @@ void print_frames() {
     #endif
 }
 
+/* Anti-idle (mouse jiggler) indicator: small filled square just inside the
+ * top-right corner of the top container on the status screen. Green
+ * (bt-status-ok theme color) = jiggler ON; repainted in bg color when OFF.
+ * Redrawn by print_menu so it survives menu redraws and theme changes. Not
+ * drawn on the snake screen (the game owns the full display). */
+static bool anti_idle_on = false;
+
+static void print_anti_idle_indicator() {
+    uint16_t color = anti_idle_on ? get_bt_status_ok_color() : get_menu_bg_color();
+    /* nested 1px outlines -> solid 13x13 square at x 222..234, y 6..18 */
+    for (uint16_t i = 0; i <= 6; i++) {
+        print_rectangle(buf_frame, 222 + i, 234 - i, 6 + i, 18 - i, color, 1);
+    }
+}
+
 void print_menu() {
     clear_screen();
     start_animation();
     print_frames();
+    print_anti_idle_indicator();
     start_battery_status();
     start_output_status();
     start_wpm_status();
@@ -207,6 +224,12 @@ void dongle_action_update_cb(struct zmk_dongle_actioned state) {
         return;
     }
     if (!state.pressed) {
+        if (pressed_timestamp == 0) {
+            /* Release with no matching press (dropped event, reconnect, etc.).
+             * Without this guard elapsed_time would equal the full uptime and
+             * spuriously trigger the longest-press action (mute). */
+            return;
+        }
         uint8_t index = menu_layer;
         int64_t elapsed_time = state.timestamp - pressed_timestamp;
         if (elapsed_time > menu_threshold) {
@@ -271,9 +294,30 @@ ZMK_DISPLAY_WIDGET_LISTENER(snake_direction, struct zmk_snake_direction, snake_d
 ZMK_SUBSCRIPTION(snake_direction, zmk_snake_direction);
 
 
+/* ############## ANTI-IDLE STATE LISTENER ############## */
+
+void anti_idle_state_update_cb(struct zmk_anti_idle_state state) {
+    anti_idle_on = state.active;
+    if (action_button_initialized && menu_on) {
+        print_anti_idle_indicator();
+    }
+}
+
+static struct zmk_anti_idle_state anti_idle_state_get_state(const zmk_event_t *eh) {
+    const struct zmk_anti_idle_state *ev = as_zmk_anti_idle_state(eh);
+    return (struct zmk_anti_idle_state){
+        .active = (ev != NULL) ? ev->active : false,
+    };
+}
+
+ZMK_DISPLAY_WIDGET_LISTENER(anti_idle_state, struct zmk_anti_idle_state, anti_idle_state_update_cb, anti_idle_state_get_state)
+ZMK_SUBSCRIPTION(anti_idle_state, zmk_anti_idle_state);
+
+
 void zmk_widget_action_button_init() {
     dongle_action_init();
     snake_direction_init();
+    anti_idle_state_init();
 
     buf_frame = (uint8_t*)k_malloc(320 * 2 * sizeof(uint8_t));
 }

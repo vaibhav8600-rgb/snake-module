@@ -1721,13 +1721,18 @@ uint32_t hex_string_to_uint(const char *hex_str) {
         i = 1;
     }
 
-    if (hex_str[i + 6] != '\0') {
-        // Not rgb hex
-        return HEX_PARSE_ERROR;
+    // Require exactly 6 hex digits after any prefix. Verify each byte exists
+    // before indexing hex_str[i + 6] so a short string (e.g. "#fffff") cannot
+    // read past the terminator.
+    for (uint8_t k = 0; k < 6; k++) {
+        if (hex_str[i + k] == '\0') {
+            // Empty or fewer than 6 digits — not rgb hex
+            return HEX_PARSE_ERROR;
+        }
     }
 
-    if (hex_str[i] == '\0') {
-        // Empty string after "0x"
+    if (hex_str[i + 6] != '\0') {
+        // More than 6 digits — not rgb hex
         return HEX_PARSE_ERROR;
     }
 

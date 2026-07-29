@@ -115,14 +115,14 @@ void print_frames() {
 }
 
 /* Anti-idle (mouse jiggler) indicator: small filled square just inside the
- * top-right corner of the top container on the status screen. Bright frame
- * color = jiggler ON; repainted in bg color when OFF. Redrawn by print_menu
- * so it survives menu redraws and theme changes. Not drawn on the snake
- * screen (the game owns the full display). */
+ * top-right corner of the top container on the status screen. Green
+ * (bt-status-ok theme color) = jiggler ON; repainted in bg color when OFF.
+ * Redrawn by print_menu so it survives menu redraws and theme changes. Not
+ * drawn on the snake screen (the game owns the full display). */
 static bool anti_idle_on = false;
 
 static void print_anti_idle_indicator() {
-    uint16_t color = anti_idle_on ? get_frame_color() : get_menu_bg_color();
+    uint16_t color = anti_idle_on ? get_bt_status_ok_color() : get_menu_bg_color();
     /* nested 1px outlines -> solid 13x13 square at x 222..234, y 6..18 */
     for (uint16_t i = 0; i <= 6; i++) {
         print_rectangle(buf_frame, 222 + i, 234 - i, 6 + i, 18 - i, color, 1);

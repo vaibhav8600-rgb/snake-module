@@ -46,12 +46,15 @@ LOG_MODULE_DECLARE(zmk, CONFIG_ZMK_LOG_LEVEL);
 #define MOD_Y     (ROW_Y + ROW_H + TH_GAP)          /* 184 */
 #define MOD_H     47
 #define FULL_W    (GFX_W - 2 * TH_PAD)              /* 222 */
+#define UI_PROFILES  MIN(ZMK_BLE_PROFILE_COUNT, 8)  /* 5 on this build */
 
 /* -- state ----------------------------------------------------------- */
 static struct {
     uint8_t  batt[2];        /* 0 = left, 1 = right, 0xFF = unknown */
     uint8_t  profile;
     bool     ble_connected;
+    uint8_t  prof_conn;      /* bit i = profile i connected */
+    uint8_t  prof_open;      /* bit i = profile i open (unpaired) */
     bool     usb_hid;
     bool     on_usb;
     const char *layer_name;
@@ -83,22 +86,32 @@ static void draw_header(void) {
     gfx_text(TH_PAD + 12 + gfx_text_w("SNAK", 3) + 3, HDR_Y + 11, "E", 3,
              gfx_hex(TH_MAGENTA), GFX_OPAQUE);
 
-    /* right cluster: transport + profile + link dot */
-    char buf[8];
-    const char *tag = st.on_usb ? "USB" : "BT";
-    int dot_x = TH_PAD + FULL_W - 16;
+    /* right cluster: transport tag over a strip of BLE profile dots.
+     * Colour is the profile's state, the underline marks the active one. */
+    int right = TH_PAD + FULL_W - 12;
 
-    if (st.on_usb) {
-        snprintf(buf, sizeof(buf), "%s", tag);
-    } else {
-        snprintf(buf, sizeof(buf), "%s%u", tag, (unsigned)(st.profile + 1));
-    }
-    int tw = gfx_text_w(buf, 2);
-    gfx_text(dot_x - 10 - tw, HDR_Y + 15, buf, 2, gfx_hex(TH_TEXT_DIM), GFX_OPAQUE);
-
+    const char *tag = st.on_usb ? "USB" : "BLE";
     bool live = st.on_usb ? st.usb_hid : st.ble_connected;
-    gfx_round_rect(dot_x, HDR_Y + 17, 8, 8, 4,
-                   live ? gfx_hex(TH_LIME) : gfx_hex(TH_TEXT_FAINT), GFX_OPAQUE);
+    gfx_text(right - gfx_text_w(tag, 1), HDR_Y + 7, tag, 1,
+             live ? gfx_hex(TH_LIME) : gfx_hex(TH_TEXT_FAINT), GFX_OPAQUE);
+
+    const int d = 7, g = 4;
+    int strip = UI_PROFILES * d + (UI_PROFILES - 1) * g;
+    int x = right - strip;
+    int y = HDR_Y + 19;
+
+    for (int i = 0; i < UI_PROFILES; i++) {
+        gfx_color c;
+        if (st.prof_conn & (1u << i))      { c = gfx_hex(TH_LIME); }
+        else if (st.prof_open & (1u << i)) { c = gfx_hex(TH_AMBER); }
+        else                               { c = gfx_hex(TH_TEXT_FAINT); }
+
+        gfx_round_rect(x, y, d, d, d / 2, c, GFX_OPAQUE);
+        if (!st.on_usb && i == st.profile) {
+            gfx_hline(x, y + d + 3, d, gfx_hex(TH_CYAN), GFX_OPAQUE);
+        }
+        x += d + g;
+    }
 }
 
 static void draw_battery(int x, const char *label, uint8_t pct) {
@@ -166,14 +179,26 @@ static void draw_mods(void) {
     }
 }
 
+/* Does a panel overlap the band being composited right now? */
+static inline bool hits(int y, int h) {
+    return !(y + h <= gfx_band_y0() || y >= gfx_band_y1());
+}
+
 static void draw_scene(void *ctx) {
     ARG_UNUSED(ctx);
+    /* The gradient clips to the band internally, so it only ever touches
+     * GFX_STRIP_H rows. Everything else gets culled here: draw_scene runs
+     * once per band, so without this each panel would be re-rendered 20
+     * times per full repaint for the 1-2 bands it actually covers. */
     gfx_vgrad(0, GFX_H, gfx_hex(TH_BG_TOP), gfx_hex(TH_BG_BOT));
-    draw_header();
-    draw_battery(TH_PAD,                 "LEFT",  st.batt[0]);
-    draw_battery(TH_PAD + BAT_W + TH_GAP, "RIGHT", st.batt[1]);
-    draw_row();
-    draw_mods();
+
+    if (hits(HDR_Y, HDR_H)) { draw_header(); }
+    if (hits(BAT_Y, BAT_H)) {
+        draw_battery(TH_PAD,                  "LEFT",  st.batt[0]);
+        draw_battery(TH_PAD + BAT_W + TH_GAP, "RIGHT", st.batt[1]);
+    }
+    if (hits(ROW_Y, ROW_H)) { draw_row(); }
+    if (hits(MOD_Y, MOD_H)) { draw_mods(); }
 }
 
 void screen_status_render(void) {
@@ -201,8 +226,15 @@ static void schedule_repaint(int y0, int y1) {
     if (y1 > dirty_hi) { dirty_hi = y1; }
     /* Must run on ZMK's display queue, not the system one. LVGL drives the
      * same SPI panel from that thread, and two queues calling display_write()
-     * concurrently would interleave on the bus. */
-    k_work_reschedule_for_queue(zmk_display_work_q(), &repaint_work, K_MSEC(100));
+     * concurrently would interleave on the bus.
+     *
+     * k_work_SCHEDULE, not k_work_RESCHEDULE. Reschedule restarts the delay on
+     * every call, so a stream of events closer together than 100 ms pushes the
+     * deadline forever and the repaint never runs - which is why typing never
+     * updated the layer/WPM/modifier panels while the 60-second battery events
+     * always got through. Schedule is a throttle: first event arms the timer,
+     * later ones are no-ops, and the accumulated dirty range paints on time. */
+    k_work_schedule_for_queue(zmk_display_work_q(), &repaint_work, K_MSEC(100));
 }
 
 /* -- ZMK listeners --------------------------------------------------- */
@@ -219,23 +251,33 @@ static struct batt_ev batt_get(const zmk_event_t *eh) {
 ZMK_DISPLAY_WIDGET_LISTENER(ui_batt, struct batt_ev, batt_cb, batt_get)
 ZMK_SUBSCRIPTION(ui_batt, zmk_peripheral_battery_state_changed);
 
-struct out_ev { uint8_t profile; bool ble; bool usb; bool on_usb; };
+struct out_ev { uint8_t profile; bool ble; bool usb; bool on_usb;
+                uint8_t prof_conn; uint8_t prof_open; };
 
 static void out_cb(struct out_ev e) {
     st.profile = e.profile;
     st.ble_connected = e.ble;
     st.usb_hid = e.usb;
     st.on_usb = e.on_usb;
+    st.prof_conn = e.prof_conn;
+    st.prof_open = e.prof_open;
     schedule_repaint(HDR_Y, HDR_Y + HDR_H);
 }
 static struct out_ev out_get(const zmk_event_t *eh) {
     ARG_UNUSED(eh);
     struct zmk_endpoint_instance sel = zmk_endpoint_get_selected();
+    uint8_t conn = 0, open = 0;
+    for (int i = 0; i < UI_PROFILES; i++) {
+        if (zmk_ble_profile_is_connected(i)) { conn |= (uint8_t)(1u << i); }
+        if (zmk_ble_profile_is_open(i))      { open |= (uint8_t)(1u << i); }
+    }
     return (struct out_ev){
-        .profile = zmk_ble_active_profile_index(),
-        .ble     = zmk_ble_active_profile_is_connected(),
-        .usb     = zmk_usb_is_hid_ready(),
-        .on_usb  = (sel.transport == ZMK_TRANSPORT_USB),
+        .profile   = zmk_ble_active_profile_index(),
+        .ble       = zmk_ble_active_profile_is_connected(),
+        .usb       = zmk_usb_is_hid_ready(),
+        .on_usb    = (sel.transport == ZMK_TRANSPORT_USB),
+        .prof_conn = conn,
+        .prof_open = open,
     };
 }
 ZMK_DISPLAY_WIDGET_LISTENER(ui_out, struct out_ev, out_cb, out_get)

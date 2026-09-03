@@ -1,88 +1,74 @@
 /*
- * Copyright (c) 2020 The ZMK Contributors
+ * Status screen entry point.
+ *
+ * The dashboard is drawn by ui/screen_status.c through the strip
+ * compositor. LVGL is still the host - ZMK requires an lv_obj back - but
+ * it draws nothing, exactly as before.
+ *
+ * The splash still runs through widgets/splash.c so the image you pass in
+ * from the config repo keeps working unchanged. Porting that onto the new
+ * compositor is the next step; it is the one piece with a byte-order
+ * detail worth verifying on hardware rather than guessing.
  *
  * SPDX-License-Identifier: MIT
  */
+#include <zephyr/kernel.h>
+#include <zephyr/logging/log.h>
 
 #include "custom_status_screen.h"
-#include "widgets/battery_status.h"
-#include "widgets/output_status.h"
 #include "widgets/splash.h"
-#include "widgets/snake.h"
+#include "widgets/helpers/buzzer.h"
 #include "widgets/helpers/display.h"
-#include "widgets/action_button.h"
-#include "widgets/logo.h"
 #include "widgets/configuration.h"
-#include "widgets/wpm.h"
-#include "widgets/modifier.h"
 
-#include <zephyr/logging/log.h>
+#include "ui/gfx.h"
+#include "ui/screen_status.h"
+
 LOG_MODULE_DECLARE(zmk, CONFIG_ZMK_LOG_LEVEL);
 
-#include "widgets/helpers/buzzer.h"
-#include "widgets/helpers/settings.h"
+#define SPLASH_TICK_MS   50
+static const uint16_t SPLASH_TICKS = CONFIG_SPLASH_DISPLAY_TIME_MS / SPLASH_TICK_MS;
 
-static const uint8_t SPLASH_DURATION = 50;
-static const uint16_t SPLASH_FINAL_COUNT = CONFIG_SPLASH_DISPLAY_TIME_MS / 50;
-static uint16_t splash_count = 0;
-static bool splash_finished = false;
+static uint16_t splash_ticks;
+static bool     splash_done;
 
-void timer_splash(lv_timer_t * timer) {
-    if (splash_finished) {
+static void splash_timer(lv_timer_t *timer) {
+    if (splash_done) {
         return;
     }
-    if (splash_count >= SPLASH_FINAL_COUNT) {
-        print_background();
-        initialize_snake_game();
-        initialize_battery_status();
-        DefaultScreen screen = get_default_screen();
-        bool menu_on;
-        if (screen == STATUS_SCREEN) {
-            print_menu();
-            menu_on = true;
-        } else {
-            start_snake();
-            menu_on = false;
-        }
-        start_action_button(menu_on);
 
-        lv_timer_pause(timer);
-        clean_up_splash();
-        splash_finished = true;
+    if (splash_ticks < SPLASH_TICKS) {
+        print_splash();
+        splash_ticks++;
         return;
     }
-    print_splash();
-    splash_count++;
+
+    lv_timer_pause(timer);
+    clean_up_splash();
+    splash_done = true;
+
+    /* hand the panel over to the new UI */
+    if (gfx_init() == 0) {
+        screen_status_init();
+    } else {
+        LOG_ERR("ui: compositor init failed, screen stays blank");
+    }
 }
 
-lv_obj_t* zmk_display_status_screen() {
+lv_obj_t *zmk_display_status_screen(void) {
+    /* colour tables still feed the splash renderer */
     configure();
     init_display();
-    theme_init();
-    logo_animation_init();
 
-    #ifdef CONFIG_USE_BUZZER
+#ifdef CONFIG_USE_BUZZER
     app_buzzer_init();
-        #ifdef CONFIG_USE_SPLASH_SOUND
-            play_snake_game_intro();
-        #endif
-    #endif
-    
-    zmk_widget_peripheral_status_init();
-    zmk_widget_splash_init();
-    zmk_widget_snake_init();
-    zmk_widget_output_status_init();
-    zmk_widget_peripheral_battery_status_init();
-    zmk_widget_layer_init();
-    zmk_widget_action_button_init();
-    zmk_widget_wpm_init();
-    zmk_widget_modifier_init();
+#ifdef CONFIG_USE_SPLASH_SOUND
+    play_snake_game_intro();
+#endif
+#endif
 
-    lv_timer_create(timer_splash, SPLASH_DURATION, NULL);
-    SlotMode slot_mode = get_slot_mode();
-    if (slot_mode == SLOT_MODE_2) {
-        lv_timer_create(logo_animation_timer, CONFIG_LOGO_WALK_INTERVAL, NULL);
-    }
+    zmk_widget_splash_init();
+    lv_timer_create(splash_timer, SPLASH_TICK_MS, NULL);
 
     return lv_obj_create(NULL);
 }

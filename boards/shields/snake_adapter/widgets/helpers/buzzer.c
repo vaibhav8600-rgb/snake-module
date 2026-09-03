@@ -193,6 +193,18 @@ static Sound mario_song[MARIO_NOTES] = {
 
 /* Thread plays song on buzzer */
 
+/* Defined further down this file, but called from buzzer_thread below.
+ * Without these the calls are implicitly declared as int-returning. */
+void run_theme_change_song(void);
+void run_connected_song(void);
+void run_disconnected_song(void);
+void run_error_song(void);
+void run_notification_song(void);
+void run_startup_song(void);
+void run_powerd_down_song(void);
+void run_snake_game_intro(void);
+void run_snake_eat_sound(void);
+
 K_SEM_DEFINE(buzzer_initialized_sem, 0, 1); /* Wait until buzzer is ready */
 
 extern void buzzer_thread(void *d0, void *d1, void *d2)

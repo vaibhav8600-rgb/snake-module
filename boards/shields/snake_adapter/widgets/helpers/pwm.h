@@ -4,6 +4,7 @@ typedef struct {
 } Sound;
 
 void stop_pwm(void);
+void play_sound(Sound sound);
 void play_song(Sound sounds[], int notes_count);
 void play_sound_with_vibrato(Sound sound, float vibrato_depth_hz, float vibrato_rate_hz);
 void play_tremolo(int freq, int duration_ms, float rate_hz);

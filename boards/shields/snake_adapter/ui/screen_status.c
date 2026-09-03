@@ -1,9 +1,10 @@
 /*
  * Glass-on-gradient status dashboard.
  *
- * ZMK listeners only ever touch `st` and raise a dirty flag; a timer does
- * the drawing. Without that split every keycode event would trigger a full
- * ten-band repaint, and holding a modifier would peg the display thread.
+ * ZMK listeners only ever touch `st` and mark a dirty row range; a coalescing
+ * work item on ZMK's display queue does the drawing. Without that split every
+ * keycode event would trigger a full twenty-band repaint, and holding a
+ * modifier would peg the display thread.
  *
  * SPDX-License-Identifier: MIT
  */
@@ -53,7 +54,6 @@ static struct {
     bool     ble_connected;
     bool     usb_hid;
     bool     on_usb;
-    uint8_t  layer;
     const char *layer_name;
     uint8_t  wpm;
     uint8_t  mods;
@@ -199,7 +199,10 @@ static K_WORK_DELAYABLE_DEFINE(repaint_work, repaint_work_cb);
 static void schedule_repaint(int y0, int y1) {
     if (y0 < dirty_lo) { dirty_lo = y0; }
     if (y1 > dirty_hi) { dirty_hi = y1; }
-    k_work_reschedule(&repaint_work, K_MSEC(100));
+    /* Must run on ZMK's display queue, not the system one. LVGL drives the
+     * same SPI panel from that thread, and two queues calling display_write()
+     * concurrently would interleave on the bus. */
+    k_work_reschedule_for_queue(zmk_display_work_q(), &repaint_work, K_MSEC(100));
 }
 
 /* -- ZMK listeners --------------------------------------------------- */
@@ -227,7 +230,7 @@ static void out_cb(struct out_ev e) {
 }
 static struct out_ev out_get(const zmk_event_t *eh) {
     ARG_UNUSED(eh);
-    struct zmk_endpoint_instance sel = zmk_endpoints_selected();
+    struct zmk_endpoint_instance sel = zmk_endpoint_get_selected();
     return (struct out_ev){
         .profile = zmk_ble_active_profile_index(),
         .ble     = zmk_ble_active_profile_is_connected(),
@@ -240,17 +243,21 @@ ZMK_SUBSCRIPTION(ui_out, zmk_endpoint_changed);
 ZMK_SUBSCRIPTION(ui_out, zmk_ble_active_profile_changed);
 ZMK_SUBSCRIPTION(ui_out, zmk_usb_conn_state_changed);
 
-struct layer_ev { uint8_t index; const char *name; };
+struct layer_ev { const char *name; };
 
 static void layer_cb(struct layer_ev e) {
-    st.layer = e.index;
     st.layer_name = (e.name && e.name[0]) ? e.name : "BASE";
     schedule_repaint(ROW_Y, ROW_Y + ROW_H);
 }
 static struct layer_ev layer_get(const zmk_event_t *eh) {
     ARG_UNUSED(eh);
-    uint8_t i = zmk_keymap_highest_layer_active();
-    return (struct layer_ev){ .index = i, .name = zmk_keymap_layer_name(i) };
+    /* On ZMK main a layer's *index* (position in the active stack) and its
+     * *id* (stable handle) are different things, and layer_name() wants the
+     * id. They happen to be equal until something reorders layers - which is
+     * exactly what Studio does - so resolve properly rather than rely on it. */
+    zmk_keymap_layer_index_t idx = zmk_keymap_highest_layer_active();
+    zmk_keymap_layer_id_t    id  = zmk_keymap_layer_index_to_id(idx);
+    return (struct layer_ev){ .name = zmk_keymap_layer_name(id) };
 }
 ZMK_DISPLAY_WIDGET_LISTENER(ui_layer, struct layer_ev, layer_cb, layer_get)
 ZMK_SUBSCRIPTION(ui_layer, zmk_layer_state_changed);

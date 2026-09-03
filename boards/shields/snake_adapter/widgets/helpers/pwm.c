@@ -10,6 +10,7 @@
  * fail to link once logging is enabled, so declare (don't re-register) here. */
 LOG_MODULE_DECLARE(app_buzzer, LOG_LEVEL_DBG);
 
+#include <math.h>   /* sinf, powf - were implicitly declared as int-returning */
 #include <stdlib.h>
 #include <zephyr/device.h>
 #include <zephyr/drivers/pwm.h>
